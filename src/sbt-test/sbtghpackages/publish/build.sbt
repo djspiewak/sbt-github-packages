@@ -1,10 +1,10 @@
 import scala.sys.process._
 
 name := "sbt-github-packages-tests-publish"
-organization := "com.codecommit"
 
-version := "git status -s".!!.trim.substring(0, 7)
+ThisBuild / organization := "com.codecommit"
+ThisBuild / version := "git status -s".!!.trim.substring(0, 7)
 
-githubOwner := "djspiewak"
-githubRepository := "sbt-github-packages"
-githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
+ThisBuild / githubOwner := "djspiewak"
+ThisBuild / githubRepository := "sbt-github-packages"
+ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
