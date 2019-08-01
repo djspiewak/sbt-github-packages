@@ -4,15 +4,10 @@ TODO description
 
 ## Usage
 
+Add the following to your **project/plugins.sbt** file:
+
 ```sbt
-// ...if using bintray
-// resolvers += Resolver.bintrayRepo("djspiewak", "maven")
-
-libraryDependencies += "com.codecommit" %% "sbt-github-packages" % "<version>"
+addSbtPlugin("com.codecommit" % "sbt-github-packages" % "<version>")
 ```
 
-Published for Scala 2.12.8.
-
-```scala
-import sbtghpackages._
-```
+Published for sbt 1.x
