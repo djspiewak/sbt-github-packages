@@ -26,3 +26,8 @@ ThisBuild / bintrayVcsUrl := Some("git@github.com:djspiewak/sbt-spiewak.git")
 
 ThisBuild / sbtPlugin := true
 ThisBuild / sbtVersion := "1.2.8"
+
+enablePlugins(SbtPlugin)
+
+scriptedLaunchOpts ++= Seq("-Dplugin.version=" + version.value)
+scriptedBufferLog := true
