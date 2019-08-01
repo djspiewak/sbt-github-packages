@@ -54,8 +54,6 @@ object GitHubPackagesPlugin extends AutoPlugin {
     githubTokenSource := None,
 
     credentials ++= inferredGitHubCredentials(
-      githubOwner.value,
-      githubRepository.value,
       githubUser.value,
       githubTokenSource.value),
 
@@ -73,7 +71,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
     publishMavenStyle := true) ++
     userDefaults
 
-  def inferredGitHubCredentials(owner: String, repo: String, user: String, tokenSource: Option[TokenSource]) = {
+  def inferredGitHubCredentials(user: String, tokenSource: Option[TokenSource]) = {
     val tokenM = tokenSource flatMap {
       case TokenSource.Environment(variable) =>
         sys.env.get(variable)
@@ -84,7 +82,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
     tokenM map { token =>
       Credentials(
-        s"GitHub $owner Apache Maven Packages",
+        "GitHub Package Registry",
         "maven.pkg.github.com",
         user,
         token)
