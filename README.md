@@ -1,4 +1,4 @@
-# sbt-github-packages
+# sbt-github-packages [![Build Status](https://travis-ci.com/djspiewak/sbt-github-packages.svg?branch=master)](https://travis-ci.com/djspiewak/sbt-github-packages)
 
 TODO description
 
