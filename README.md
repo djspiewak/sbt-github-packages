@@ -1,5 +1,7 @@
 # sbt-github-packages [![Build Status](https://travis-ci.com/djspiewak/sbt-github-packages.svg?branch=master)](https://travis-ci.com/djspiewak/sbt-github-packages)
 
+**Note:** Still working on getting this functioning. Hence the lack of a stable release.
+
 Configures your project for publication to the [GitHub Package Registry](https://help.github.com/en/articles/about-github-package-registry) using its Apache Maven support. Note that you probably shouldn't use this with plugins, only libraries. Probably won't delete your source code, but no promises.
 
 ## Usage
