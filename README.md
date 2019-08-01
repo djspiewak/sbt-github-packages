@@ -12,6 +12,16 @@ addSbtPlugin("com.codecommit" % "sbt-github-packages" % "<version>")
 
 Published for sbt 1.x. No dependencies.
 
+### Resolvers
+
+If you're consuming packages that were published in the GitHub Package Registry, this plugin defines some convenience syntax for adding resolvers:
+
+```sbt
+resolvers += Resolver.githubPackagesRepo("OWNER", "REPOSITORY")
+```
+
+This works for both public and private repositories, though if you use it with a private repository, you will also need to ensure that either `credentials` or `githubTokenSource` are appropriately configured.
+
 ### Keys
 
 The following setting keys are defined:
@@ -20,6 +30,8 @@ The following setting keys are defined:
 - `githubRepository : String` (*required*) The repository which hosts this project under the organization/user defined in the other setting
 - `githubUser : String` (*defaults to `git config github.user`*) *Your* GitHub username. This should almost never be specified in the build itself, but rather read from some external source. By default, it will read from the `git config` (by shelling out to the `git` command), but it's easy to override this to use an environment variable (e.g. `githubUser := sys.env("GITHUB_USER")`). To be extremely clear, this is the user who ran the `sbt` command, it is not *necessarily* the repository owner!
 - `githubTokenSource : Option[TokenSource]` (*defaults to `None`*) Where the plugin should go to read the GitHub API token to use in authentication. `TokenSource` has two possible values: `Environment(variable: String)` and `GitConfig(key: String)`. This is mostly just a convenience. You're free to do whatever you want. Just don't, like, put it in your build. 
+
+`homepage` and `scmInfo` will be configured for you based on the above.
 
 Note that the token must have `read:packages` access if you want to *depend on* packages from private repositories, and must have `write:packages` if you wish to *publish* packages. At present there is no support for splitting these two tokens (mostly due to limitations in GitHub's API). If you define `githubTokenSource := None` (the default) and you don't want to use an environment variable or `git config` value to configure your token, you will need to set up the `credentials` in something roughly approximating the following:
 
