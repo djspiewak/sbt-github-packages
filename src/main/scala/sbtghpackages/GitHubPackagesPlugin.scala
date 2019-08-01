@@ -27,6 +27,9 @@ object GitHubPackagesPlugin extends AutoPlugin {
   override def trigger = allRequirements
 
   object autoImport extends GitHubPackagesKeys {
+    type TokenSource = sbtghpackages.TokenSource
+    val TokenSource = sbtghpackages.TokenSource
+
     implicit class GHPackagesResolverSyntax(val resolver: Resolver.type) extends AnyVal {
       def githubPackagesRepo(owner: String, repo: String): MavenRepository =
         s"GitHub $owner Apache Maven Packages" at s"https://maven.pkg.github.com/$owner/$repo"
