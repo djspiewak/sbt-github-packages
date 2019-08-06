@@ -90,4 +90,10 @@ object GitHubPackagesPlugin extends AutoPlugin {
   }
 
   override def buildSettings = packagePublishSettings
+
+  override def projectSettings = Seq(
+    artifacts := {
+      val (poms, others) = artifacts.value.partition(_.extension == "pom")
+      others ++ poms
+    })
 }
