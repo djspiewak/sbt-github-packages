@@ -9,7 +9,7 @@ branches:
     - /^v\d+\.\d+\.\d+$/      # don't redundantly build tags
 
 scala:
-  - 2.12.8
+  - 2.12.10
 
 script:
   - sbt ++$TRAVIS_SCALA_VERSION ci
