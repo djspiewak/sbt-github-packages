@@ -32,7 +32,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
     implicit class GHPackagesResolverSyntax(val resolver: Resolver.type) extends AnyVal {
       def githubPackagesRepo(owner: String, repo: String): MavenRepository =
-        s"GitHub $owner Apache Maven Packages" at s"https://maven.pkg.github.com/$owner/$repo"
+        s"GitHub Maven Packages" at s"https://maven.pkg.github.com/$owner/$repo"
     }
   }
 
@@ -53,19 +53,39 @@ object GitHubPackagesPlugin extends AutoPlugin {
   val packagePublishSettings = Seq(
     githubTokenSource := None,
 
-    credentials ++= inferredGitHubCredentials(
-      githubUser.value,
-      githubTokenSource.value),
+    credentials ++= {
+      githubUser.?.value.flatMap(u => githubTokenSource.?.value.map(ts => (u, ts))).toSeq flatMap {
+        case (user, tokenSource) =>
+          inferredGitHubCredentials(user, tokenSource)
+      }
+    },
 
-    publishTo := Some(
-      "GitHub Package Registry" at s"https://maven.pkg.github.com/${githubOwner.value}/${githubRepository.value}"),
+    publishTo := {
+      val back = for {
+        owner <- githubOwner.?.value
+        repo <- githubRepository.?.value
+      } yield "GitHub Package Registry" at s"https://maven.pkg.github.com/$owner/$repo"
 
-    scmInfo := Some(
-      ScmInfo(
-        url(s"https://github.com/${githubOwner.value}/${githubRepository.value}"),
-        s"scm:git@github.com:${githubOwner.value}/${githubRepository.value}")),
+      back orElse {
+        streams.value.log.info("undefined keys `ThisBuild / githubOwner` and `ThisBuild / githubRepository`")
+        streams.value.log.info("retaining pre-existing publishTo settings")
+        publishTo.value
+      }
+    },
 
-    homepage := Some(url(s"https://github.com/${githubOwner.value}/${githubRepository.value}")),
+    scmInfo := {
+      for {
+        owner <- githubOwner.?.value
+        repo <- githubRepository.?.value
+      } yield ScmInfo(url(s"https://github.com/$owner/$repo"), s"scm:git@github.com:$owner/$repo")
+    },
+
+    homepage := {
+      for {
+        owner <- githubOwner.?.value
+        repo <- githubRepository.?.value
+      } yield url(s"https://github.com/$owner/$repo")
+    },
 
     pomIncludeRepository := (_ => false),
     publishMavenStyle := true) ++
@@ -90,10 +110,4 @@ object GitHubPackagesPlugin extends AutoPlugin {
   }
 
   override def buildSettings = packagePublishSettings
-
-  override def projectSettings = Seq(
-    artifacts := {
-      val (poms, others) = artifacts.value.partition(_.extension == "pom")
-      others ++ poms
-    })
 }
