@@ -34,7 +34,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
     implicit class GHPackagesResolverSyntax(val resolver: Resolver.type) extends AnyVal {
       def githubPackagesRepo(owner: String, repo: String): MavenRepository =
-        s"GitHub Maven Packages" at s"https://maven.pkg.github.com/$owner/$repo"
+        realm(owner, repo) at s"https://maven.pkg.github.com/$owner/$repo"
     }
   }
 
@@ -117,6 +117,9 @@ object GitHubPackagesPlugin extends AutoPlugin {
         token)
     }
   }
+
+  private def realm(owner: String, repo: String) =
+    s"GitHub Package Registry ($owner/$repo)"
 
   override def buildSettings = packagePublishSettings
 }
