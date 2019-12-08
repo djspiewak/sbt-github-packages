@@ -58,7 +58,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
       githubTokenSource.value),
 
     publishTo := Some(
-      s"GitHub ${githubOwner.value} Apache Maven Packages" at s"https://maven.pkg.github.com/${githubOwner.value}/${githubRepository.value}"),
+      "GitHub Package Registry" at s"https://maven.pkg.github.com/${githubOwner.value}/${githubRepository.value}"),
 
     scmInfo := Some(
       ScmInfo(
