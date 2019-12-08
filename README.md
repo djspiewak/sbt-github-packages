@@ -1,6 +1,6 @@
 # sbt-github-packages [![Build Status](https://travis-ci.com/djspiewak/sbt-github-packages.svg?branch=master)](https://travis-ci.com/djspiewak/sbt-github-packages)
 
-Configures your project for publication to the [GitHub Package Registry](https://help.github.com/en/articles/about-github-package-registry) using its Apache Maven support. Note that you probably shouldn't use this with plugins, only libraries. Probably won't delete your source code, but no promises. Also provides some convenience functionality for *depending* upon artifacts which have been published to the Package Registry.
+Configures your project for publication to the [GitHub Package Registry](https://help.github.com/en/articles/about-github-package-registry) using its Apache Maven support. Note that you probably shouldn't use this with plugins, only libraries. Also provides some convenience functionality for *depending* upon artifacts which have been published to the Package Registry.
 
 ## Usage
 
@@ -36,24 +36,67 @@ If you're consuming packages that were published in the GitHub Package Registry,
 resolvers += Resolver.githubPackagesRepo("OWNER", "REPOSITORY")
 ```
 
-This works for both public and private repositories, though if you use it with a private repository, you will also need to ensure that either `credentials` or `githubTokenSource` are appropriately configured.
+This works for both public and private repositories, and you may add as many as desired, though if you use it with a private repository, you will also need to ensure that either `credentials` or `githubTokenSource` are appropriately configured.
 
-#### Multiple Resolvers
+### Credentials
 
-A not-unusual requirement may be to support resolution from several different repositories. For example:
+When resolving from a private repository, or when publishing to *any* repository, you will need to ensure that both `githubUser` and `githubTokenSource` are set to *your* details (i.e. the authentication information for the individaul who ran `sbt`). A relatively common setup for this is to add the following to your `~/.gitconfig` file (replacing `USERNAME` with whatever your username is):
+
+```gitconfig
+[github]
+  user = USERNAME
+```
+
+Once this is configured, sbt-github-packages will automatically set your `githubUser` key to its value. That just leaves the `githubTokenSource`. The `TokenSource` ADT has the following possibilities:
+
+```scala
+sealed trait TokenSource extends Product with Serializable
+
+object TokenSource {
+  final case class Environment(variable: String) extends TokenSource
+  final case class GitConfig(key: String) extends TokenSource
+}
+```
+
+Environment variables are a fairly good default. For example, I have a GitHub token for my laptop stored in the `GITHUB_TOKEN` environment variable. If you mirror this setup, you should configure `githubTokenSource` in the following way:
 
 ```sbt
-resolvers += Resolver.githubPackagesRepo("djspiewak", "sbt-github-packages")
-resolvers += Resolver.githubPackagesRepo("djspiewak", "shims")
+ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
 ```
 
-Unfortunately, this will yield the following warning in sbt:
+Note that your CI server will need to set the `GITHUB_TOKEN` environment variable as well, as well as any collaborators on your project. The environmentment-specific nature of these login credentials are a major part of why they are *not* just strings sitting in the `build.sbt` file. As an example, if you're using Travis, you can do something like the following:
 
-```
-[warn] Multiple resolvers having different access mechanism configured with same name 'GitHub Maven Packages'. To avoid conflict, Remove duplicate project resolvers (`resolvers`) or rename publishing resolver (`publishTo`).
+```bash
+# in your .profile file
+$ export GITHUB_TOKEN="abcdef12345cafebabe"   # <-- your token here (or your build bot's)
+
+# ...and when setting up your project
+$ travis encrypt GITHUB_TOKEN=$GITHUB_TOKEN
 ```
 
-There isn't *really* a good workaround to this right now, and it's also not clear exactly how badly it degrades functionality. Consider this a work-in-progress. The problem stems from the fact that the credentials handling can only set a single realm: `GitHub Maven Packages`. In theory, the solution to this would be if sbt gave us the ability to set credentials which apply to *any* realm with a given host, but that doesn't appear to be possible at the current time.
+Then, in the `.travis.yml` file, you'll probably have the following (in addition to the `env.global` configuration that the `travis encrypt` command will prompt you to add):
+
+```yaml
+install:
+  - git config --global git.user USERNAME
+```
+
+If you are solely *depending upon* packages from private repositories and not publishing, the token only needs the `read:packages` grant. If you are *publishing*, the token will need the `write:packages` grant. You can provision a new token under your GitHub account under the [Personal access tokens](https://github.com/settings/tokens) section of **Settings**.
+
+#### Manual Configuration
+
+Once these values are set, the `credentials` key will be adjusted to reflect your GitHub authentication details. If you prefer, you are certainly free to set the credentials yourself, rather than trusting the plugin. They will need to take on the following form:
+
+```sbt
+credentials += 
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "USERNAME",
+    "TOKEN")
+```
+
+Please, for the love of all that is holy, do not check this into your repository if you hard-code your credentials in this way. The token is a password. Treat it as such. A better approach would be to place the above into some global location, like `~/.sbt/1.0/github.sbt`.
 
 ### Keys
 
@@ -64,33 +107,4 @@ The following setting keys are defined:
 - `githubUser : String` (*defaults to `git config github.user`*) *Your* GitHub username. This should almost never be specified in the build itself, but rather read from some external source. By default, it will read from the `git config` (by shelling out to the `git` command), but it's easy to override this to use an environment variable (e.g. `githubUser := sys.env("GITHUB_USER")`). To be extremely clear, this is the user who ran the `sbt` command, it is not *necessarily* the repository owner!
 - `githubTokenSource : Option[TokenSource]` (*defaults to `None`*) Where the plugin should go to read the GitHub API token to use in authentication. `TokenSource` has two possible values: `Environment(variable: String)` and `GitConfig(key: String)`. This is mostly just a convenience. You're free to do whatever you want. Just don't, like, put it in your build. 
 
-`homepage` and `scmInfo` will be configured for you based on the above.
-
-Note that the token must have `read:packages` access if you want to *depend on* packages from private repositories, and must have `write:packages` if you wish to *publish* packages. At present there is no support for splitting these two tokens (mostly due to limitations in GitHub's API). If you define `githubTokenSource := None` (the default) and you don't want to use an environment variable or `git config` value to configure your token, you will need to set up the `credentials` in something roughly approximating the following:
-
-```sbt
-credentials += 
-  Credentials(
-    "GitHub Package Registry",
-    "maven.pkg.github.com",
-    githubUser.value,
-    token)
-```
-
-For the love of all that is holy, do not put this into your **build.sbt**. The `token` is a password. Treat it as such. Best practice is generally to use an encrypted environment variable in your CI and a necessarily unencrypted environment variable locally. For example:
-
-```sbt
-ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
-```
-
-Then, if using Travis, you should be able to do something like:
-
-```bash
-# in your .profile file
-$ export GITHUB_TOKEN="abcdef12345cafebabe"   # <-- your token here
-
-# ...and when setting up your project
-$ travis encrypt GITHUB_TOKEN=$GITHUB_TOKEN
-```
-
-Follow the instructions on how to add this to your `.travis.yml`.
+`homepage` and `scmInfo` will be automatically set for you if `githubOwner` and `githubRepository` are themselves set.
