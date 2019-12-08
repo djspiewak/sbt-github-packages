@@ -1,8 +1,6 @@
 # sbt-github-packages [![Build Status](https://travis-ci.com/djspiewak/sbt-github-packages.svg?branch=master)](https://travis-ci.com/djspiewak/sbt-github-packages)
 
-**Note:** Still working on getting this functioning. Hence the lack of a stable release. In fact, it appears that actual functionality is hard blocked on GitHub, which we have tracked in [#1](https://github.com/djspiewak/sbt-github-packages/issues/1).
-
-Configures your project for publication to the [GitHub Package Registry](https://help.github.com/en/articles/about-github-package-registry) using its Apache Maven support. Note that you probably shouldn't use this with plugins, only libraries. Probably won't delete your source code, but no promises.
+Configures your project for publication to the [GitHub Package Registry](https://help.github.com/en/articles/about-github-package-registry) using its Apache Maven support. Note that you probably shouldn't use this with plugins, only libraries. Probably won't delete your source code, but no promises. Also provides some convenience functionality for *depending* upon artifacts which have been published to the Package Registry. **Has not yet been tested with private repos.**
 
 ## Usage
 
@@ -40,7 +38,7 @@ Note that the token must have `read:packages` access if you want to *depend on* 
 ```sbt
 credentials += 
   Credentials(
-    s"GitHub ${githubOwner.value} Apache Maven Packages",
+    "GitHub Package Registry",
     "maven.pkg.github.com",
     githubUser.value,
     token)
