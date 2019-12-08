@@ -22,6 +22,8 @@ import scala.sys.process._
 import scala.util.control.NonFatal
 
 object GitHubPackagesPlugin extends AutoPlugin {
+  @volatile
+  private[this] var alreadyWarned = false
 
   override def requires = plugins.JvmPlugin
   override def trigger = allRequirements
@@ -61,14 +63,21 @@ object GitHubPackagesPlugin extends AutoPlugin {
     },
 
     publishTo := {
+      val log = streams.value.log
       val back = for {
         owner <- githubOwner.?.value
         repo <- githubRepository.?.value
       } yield "GitHub Package Registry" at s"https://maven.pkg.github.com/$owner/$repo"
 
       back orElse {
-        streams.value.log.info("undefined keys `ThisBuild / githubOwner` and `ThisBuild / githubRepository`")
-        streams.value.log.info("retaining pre-existing publishTo settings")
+        GitHubPackagesPlugin synchronized {
+          if (!alreadyWarned) {
+            log.warn("undefined keys `ThisBuild / githubOwner` and `ThisBuild / githubRepository`")
+            log.warn("retaining pre-existing publication settings")
+            alreadyWarned = true
+          }
+        }
+
         publishTo.value
       }
     },
