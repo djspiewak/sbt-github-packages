@@ -19,6 +19,7 @@ package sbtghpackages
 import sbt._, Keys._
 
 import scala.sys.process._
+import scala.util.Try
 import scala.util.control.NonFatal
 
 object GitHubPackagesPlugin extends AutoPlugin {
@@ -33,7 +34,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
     val TokenSource = sbtghpackages.TokenSource
 
     implicit class GHPackagesResolverSyntax(val resolver: Resolver.type) extends AnyVal {
-      def githubPackagesRepo(owner: String, repo: String): MavenRepository =
+      def githubPackages(owner: String, repo: String): MavenRepository =
         realm(owner, repo) at s"https://maven.pkg.github.com/$owner/$repo"
     }
   }
@@ -41,27 +42,18 @@ object GitHubPackagesPlugin extends AutoPlugin {
   import autoImport._
 
   val userDefaults = try {
-    val user = "git config github.user".!!.trim
-
-    if (user != "")
-      Seq(githubUser := user)
-    else
-      Seq.empty
+    val actor = "git config github.actor".!!.trim
+    Seq(githubActor := actor)
   } catch {
     case NonFatal(_) =>
       Seq.empty
   }
 
+  val authenticationSettings = Seq(
+    githubTokenSource := TokenSource.GitConfig("github.token"),
+    credentials += inferredGitHubCredentials(githubActor.value, githubTokenSource.value))
+
   val packagePublishSettings = Seq(
-    githubTokenSource := None,
-
-    credentials ++= {
-      githubUser.?.value.flatMap(u => githubTokenSource.?.value.map(ts => (u, ts))).toSeq flatMap {
-        case (user, tokenSource) =>
-          inferredGitHubCredentials(user, tokenSource)
-      }
-    },
-
     publishTo := {
       val log = streams.value.log
       val back = for {
@@ -72,7 +64,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
       back orElse {
         GitHubPackagesPlugin synchronized {
           if (!alreadyWarned) {
-            log.warn("undefined keys `ThisBuild / githubOwner` and `ThisBuild / githubRepository`")
+            log.warn("undefined keys `githubOwner` and `githubRepository`")
             log.warn("retaining pre-existing publication settings")
             alreadyWarned = true
           }
@@ -98,15 +90,16 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
     pomIncludeRepository := (_ => false),
     publishMavenStyle := true) ++
-    userDefaults
+    userDefaults ++
+    authenticationSettings
 
-  def inferredGitHubCredentials(user: String, tokenSource: Option[TokenSource]) = {
-    val tokenM = tokenSource flatMap {
+  def inferredGitHubCredentials(user: String, tokenSource: TokenSource) = {
+    val tokenM = tokenSource match {
       case TokenSource.Environment(variable) =>
         sys.env.get(variable)
 
       case TokenSource.GitConfig(key) =>
-        Option(s"git config $key".!!).map(_.trim).filterNot(_.isEmpty)
+        Try(s"git config $key".!!).map(_.trim).toOption
     }
 
     tokenM map { token =>
@@ -121,5 +114,5 @@ object GitHubPackagesPlugin extends AutoPlugin {
   private def realm(owner: String, repo: String) =
     s"GitHub Package Registry ($owner/$repo)"
 
-  override def buildSettings = packagePublishSettings
+  override def projectSettings = packagePublishSettings
 }

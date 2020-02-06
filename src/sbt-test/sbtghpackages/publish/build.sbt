@@ -7,7 +7,7 @@ ThisBuild / version := s"${sys.props("plugin.version")}"
 
 ThisBuild / githubOwner := "djspiewak"
 ThisBuild / githubRepository := "sbt-github-packages"
-ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
+ThisBuild / githubTokenSource := TokenSource.Environment("GITHUB_TOKEN")
 
 lazy val root = project.in(file("."))
 
@@ -18,6 +18,6 @@ lazy val publisher = project
 lazy val resolver = project
   .in(file("resolver"))
   .settings(
-    resolvers += Resolver.githubPackagesRepo(githubOwner.value, githubRepository.value),
+    resolvers += Resolver.githubPackages(githubOwner.value, githubRepository.value),
 
     libraryDependencies += "com.codecommit" %% ArtifactId % version.value)

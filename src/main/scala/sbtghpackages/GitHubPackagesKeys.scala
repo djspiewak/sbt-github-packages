@@ -22,8 +22,8 @@ trait GitHubPackagesKeys {
   val githubOwner = settingKey[String]("The github user or organization name")
   val githubRepository = settingKey[String]("The github repository hosting this package")
 
-  val githubUser = settingKey[String]("The github user to use when authenticating (defaults to github.user in the git config)")
-  val githubTokenSource = settingKey[Option[TokenSource]]("Where to get the API token used in publication")
+  val githubActor = settingKey[String]("The github user to use when authenticating (defaults to github.actor in the git config)")
+  val githubTokenSource = settingKey[TokenSource]("Where to get the API token used in publication (defaults to github.token in the git config)")
 }
 
 object GitHubPackagesKeys extends GitHubPackagesKeys

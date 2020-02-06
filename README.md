@@ -15,14 +15,14 @@ Published for sbt 1.x. No dependencies.
 In order to *publish* artifacts via this plugin, you will need to override the `githubOwner` and `githubRepository` setting keys to the relevant values for your project. For example:
 
 ```sbt
-ThisBuild / githubOwner := "djspiewak"
-ThisBuild / githubRepository := "sbt-github-packages"
+githubOwner := "djspiewak"
+githubRepository := "sbt-github-packages"
 ```
 
-The `ThisBuild` scoping is significant. In the event that you do *not* override these values, you will see a warning like the following:
+In the event that you do *not* override these values, you will see a warning like the following:
 
 ```
-[warn] undefined keys `ThisBuild / githubOwner` and `ThisBuild / githubRepository`
+[warn] undefined keys `githubOwner` and `githubRepository`
 [warn] retaining pre-existing publication settings
 ```
 
@@ -33,21 +33,19 @@ The reason this functionality is disabled by default is you may wish to utilize 
 If you're consuming packages that were published in the GitHub Package Registry, this plugin defines some convenience syntax for adding resolvers:
 
 ```sbt
-resolvers += Resolver.githubPackagesRepo("OWNER", "REPOSITORY")
+resolvers += Resolver.githubPackages("OWNER", "REPOSITORY")
 ```
 
 This works for both public and private repositories, and you may add as many as desired, though if you use it with a private repository, you will also need to ensure that either `credentials` or `githubTokenSource` are appropriately configured.
 
-### Credentials
-
-When resolving from a private repository, or when publishing to *any* repository, you will need to ensure that both `githubUser` and `githubTokenSource` are set to *your* details (i.e. the authentication information for the individaul who ran `sbt`). A relatively common setup for this is to add the following to your `~/.gitconfig` file (replacing `USERNAME` with whatever your username is):
+You will need to ensure that both `githubActor` and `githubTokenSource` are set to *your* details (i.e. the authentication information for the individual who ran `sbt`). A relatively common setup for this is to add the following to your `~/.gitconfig` file (replacing `USERNAME` with whatever your username is):
 
 ```gitconfig
 [github]
-  user = USERNAME
+  actor = USERNAME
 ```
 
-Once this is configured, sbt-github-packages will automatically set your `githubUser` key to its value. That just leaves the `githubTokenSource`. The `TokenSource` ADT has the following possibilities:
+Once this is configured, sbt-github-packages will automatically set your `githubActor` key to its value. That just leaves the `githubTokenSource`. The `TokenSource` ADT has the following possibilities:
 
 ```scala
 sealed trait TokenSource extends Product with Serializable
@@ -61,10 +59,10 @@ object TokenSource {
 Environment variables are a fairly good default. For example, I have a GitHub token for my laptop stored in the `GITHUB_TOKEN` environment variable. If you mirror this setup, you should configure `githubTokenSource` in the following way:
 
 ```sbt
-ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
+githubTokenSource := TokenSource.Environment("GITHUB_TOKEN")
 ```
 
-Note that your CI server will need to set the `GITHUB_TOKEN` environment variable as well, as well as any collaborators on your project. The environmentment-specific nature of these login credentials are a major part of why they are *not* just strings sitting in the `build.sbt` file. As an example, if you're using Travis, you can do something like the following:
+Note that your CI server will need to set the `GITHUB_TOKEN` environment variable as well, as well as any collaborators on your project. The environment-specific nature of these login credentials are a major part of why they are *not* just strings sitting in the `build.sbt` file. As an example, if you're using Travis, you can do something like the following:
 
 ```bash
 # in your .profile file
@@ -81,7 +79,7 @@ install:
   - git config --global git.user USERNAME
 ```
 
-If you are solely *depending upon* packages from private repositories and not publishing, the token only needs the `read:packages` grant. If you are *publishing*, the token will need the `write:packages` grant. You can provision a new token under your GitHub account under the [Personal access tokens](https://github.com/settings/tokens) section of **Settings**.
+If you are solely *depending upon* packages and not publishing, the token only needs the `read:packages` grant. If you are *publishing*, the token will need the `write:packages` grant. You can provision a new token under your GitHub account under the [Personal access tokens](https://github.com/settings/tokens) section of **Settings**.
 
 #### Manual Configuration
 
@@ -98,13 +96,22 @@ credentials +=
 
 Please, for the love of all that is holy, do not check this into your repository if you hard-code your credentials in this way. The token is a password. Treat it as such. A better approach would be to place the above into some global location, like `~/.sbt/1.0/github.sbt`.
 
+### GitHub Actions
+
+Okay, so GitHub Actions is pretty much undocumented with respect to its interactions with GitHub Packages. Lovely. Some things I've learned through experimentation:
+
+- The automagical `${{ secrets.GITHUB_TOKEN }}`/`git config git.token` provided by GitHub Actions has access to packages in *other* public repositories, even when run from a pull request from a fork.
+- The automagical token is not a standard access token, but rather a *bearer token* for the GitHub Actions, uh, App. Confused yet? Among other things, it means that the username is irrelevant. You can leave it blank, or rely on some other default.
+
+The defaults for this plugin will work in GitHub Actions out of the box.
+
 ### Keys
 
 The following setting keys are defined:
 
 - `githubOwner : String` Defines the organization or user name that owns the package registry to which this project will be published
 - `githubRepository : String` The repository which hosts this project under the organization/user defined in the other setting
-- `githubUser : String` (*defaults to `git config github.user`*) *Your* GitHub username. This should almost never be specified in the build itself, but rather read from some external source. By default, it will read from the `git config` (by shelling out to the `git` command), but it's easy to override this to use an environment variable (e.g. `githubUser := sys.env("GITHUB_USER")`). To be extremely clear, this is the user who ran the `sbt` command, it is not *necessarily* the repository owner!
-- `githubTokenSource : Option[TokenSource]` (*defaults to `None`*) Where the plugin should go to read the GitHub API token to use in authentication. `TokenSource` has two possible values: `Environment(variable: String)` and `GitConfig(key: String)`. This is mostly just a convenience. You're free to do whatever you want. Just don't, like, put it in your build. 
+- `githubActor : String` (*defaults to `git config github.actor`*) *Your* GitHub username. This should almost never be specified in the build itself, but rather read from some external source. By default, it will read from the `git config` (by shelling out to the `git` command), but it's easy to override this to use an environment variable (e.g. `githubActor := sys.env("GITHUB_ACTOR")`). To be extremely clear, this is the user who ran the `sbt` command, it is not *necessarily* the repository owner!
+- `githubTokenSource : TokenSource` (*defaults to `GitConfig("github.token")`*) Where the plugin should go to read the GitHub API token to use in authentication. `TokenSource` has two possible values: `Environment(variable: String)` and `GitConfig(key: String)`. This is mostly just a convenience. You're free to do whatever you want. Just don't, like, put it in your build. 
 
 `homepage` and `scmInfo` will be automatically set for you if `githubOwner` and `githubRepository` are themselves set.
