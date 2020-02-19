@@ -93,21 +93,26 @@ object GitHubPackagesPlugin extends AutoPlugin {
     userDefaults ++
     authenticationSettings
 
-  def inferredGitHubCredentials(user: String, tokenSource: TokenSource) = {
-    val tokenM = tokenSource match {
+  def inferredGitHubCredentials(user: String, tokenSource: TokenSource): Option[Credentials] = {
+    def make(tokenM: Option[String]) =
+      tokenM map { token =>
+        Credentials(
+          "GitHub Package Registry",
+          "maven.pkg.github.com",
+          user,
+          token)
+      }
+
+    tokenSource match {
+      case TokenSource.Or(primary, secondary) =>
+        inferredGitHubCredentials(user, primary).orElse(
+          inferredGitHubCredentials(user, secondary))
+
       case TokenSource.Environment(variable) =>
-        sys.env.get(variable)
+        make(sys.env.get(variable))
 
       case TokenSource.GitConfig(key) =>
-        Try(s"git config $key".!!).map(_.trim).toOption
-    }
-
-    tokenM map { token =>
-      Credentials(
-        "GitHub Package Registry",
-        "maven.pkg.github.com",
-        user,
-        token)
+        make(Try(s"git config $key".!!).map(_.trim).toOption)
     }
   }
 

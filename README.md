@@ -48,11 +48,15 @@ You will need to ensure that both `githubActor` and `githubTokenSource` are set 
 Once this is configured, sbt-github-packages will automatically set your `githubActor` key to its value. That just leaves the `githubTokenSource`. The `TokenSource` ADT has the following possibilities:
 
 ```scala
-sealed trait TokenSource extends Product with Serializable
+sealed trait TokenSource extends Product with Serializable {
+  def ||(that: TokenSource): TokenSource =
+    TokenSource.Or(this, that)
+}
 
 object TokenSource {
   final case class Environment(variable: String) extends TokenSource
   final case class GitConfig(key: String) extends TokenSource
+  final case class Or(primary: TokenSource, secondary: TokenSource) extends TokenSource
 }
 ```
 
@@ -61,6 +65,8 @@ Environment variables are a fairly good default. For example, I have a GitHub to
 ```sbt
 githubTokenSource := TokenSource.Environment("GITHUB_TOKEN")
 ```
+
+The `||` combinator allows you to configure multiple token sources which will be tried in order on first-read of the setting.
 
 Note that your CI server will need to set the `GITHUB_TOKEN` environment variable as well, as well as any collaborators on your project. The environment-specific nature of these login credentials are a major part of why they are *not* just strings sitting in the `build.sbt` file. As an example, if you're using Travis, you can do something like the following:
 
