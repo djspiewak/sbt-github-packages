@@ -51,7 +51,17 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
   val authenticationSettings = Seq(
     githubTokenSource := TokenSource.GitConfig("github.token"),
-    credentials += inferredGitHubCredentials(githubActor.value, githubTokenSource.value))
+
+    credentials += {
+      val src = githubTokenSource.value
+      inferredGitHubCredentials(githubActor.value, src) match {
+        case Some(creds) =>
+          creds
+
+        case None =>
+          sys.error(s"unable to locate a valid GitHub token from $src")
+      }
+    })
 
   val packagePublishSettings = Seq(
     publishTo := {
