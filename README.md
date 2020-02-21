@@ -66,6 +66,21 @@ Environment variables are a fairly good default. For example, I have a GitHub to
 githubTokenSource := TokenSource.Environment("GITHUB_TOKEN")
 ```
 
+To use a token from `~/.gitconfig` you should add:
+
+```sbt
+githubTokenSource := TokenSource.GitConfig("github.token")
+```
+
+This assumes you have your token stored there like this:
+
+```gitconfig
+[github]
+  token = TOKEN_DATA
+```
+
+
+
 The `||` combinator allows you to configure multiple token sources which will be tried in order on first-read of the setting.
 
 Note that your CI server will need to set the `GITHUB_TOKEN` environment variable as well, as well as any collaborators on your project. The environment-specific nature of these login credentials are a major part of why they are *not* just strings sitting in the `build.sbt` file. As an example, if you're using Travis, you can do something like the following:
