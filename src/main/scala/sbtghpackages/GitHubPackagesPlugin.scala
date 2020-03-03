@@ -20,7 +20,6 @@ import sbt._, Keys._
 
 import scala.sys.process._
 import scala.util.Try
-import scala.util.control.NonFatal
 
 object GitHubPackagesPlugin extends AutoPlugin {
   @volatile
@@ -41,16 +40,10 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
   import autoImport._
 
-  val userDefaults = try {
-    val actor = "git config github.actor".!!.trim
-    Seq(githubActor := actor)
-  } catch {
-    case NonFatal(_) =>
-      Seq.empty
-  }
+  val userDefaults = sys.env.get("GITHUB_ACTOR").toSeq.map(githubActor := _)
 
   val authenticationSettings = Seq(
-    githubTokenSource := TokenSource.GitConfig("github.token"),
+    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
 
     credentials += {
       val src = githubTokenSource.value
@@ -83,6 +76,8 @@ object GitHubPackagesPlugin extends AutoPlugin {
         publishTo.value
       }
     },
+
+    resolvers ++= githubOwner.?.value.toSeq.map(Resolver.githubPackages(_)),
 
     scmInfo := {
       for {
