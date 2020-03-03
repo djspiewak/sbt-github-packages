@@ -1,6 +1,6 @@
 # sbt-github-packages [![Build Status](https://travis-ci.com/djspiewak/sbt-github-packages.svg?branch=master)](https://travis-ci.com/djspiewak/sbt-github-packages)
 
-Configures your project for publication to the [GitHub Package Registry](https://help.github.com/en/articles/about-github-package-registry) using its Apache Maven support. Note that you probably shouldn't use this with plugins, only libraries. Also provides some convenience functionality for *depending* upon artifacts which have been published to the Package Registry.
+Configures your project for publication to the [GitHub Package Registry](https://help.github.com/en/articles/about-github-package-registry) using its Apache Maven support. Note that GitHub Packages *exclusively* supports maven-style publication; using Ivy style will result in a warning. Also provides some convenience functionality for *depending* upon artifacts which have been published to the Package Registry.
 
 ## Usage
 

@@ -59,10 +59,17 @@ object GitHubPackagesPlugin extends AutoPlugin {
   val packagePublishSettings = Seq(
     publishTo := {
       val log = streams.value.log
+      val ms = publishMavenStyle.value
       val back = for {
         owner <- githubOwner.?.value
         repo <- githubRepository.?.value
       } yield "GitHub Package Registry" at s"https://maven.pkg.github.com/$owner/$repo"
+
+      back foreach { _ =>
+        if (!ms) {
+          sys.error("GitHub Packages does not support Ivy-style publication")
+        }
+      }
 
       back orElse {
         GitHubPackagesPlugin synchronized {
