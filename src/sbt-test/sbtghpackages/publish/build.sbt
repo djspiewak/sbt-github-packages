@@ -18,6 +18,4 @@ lazy val publisher = project
 lazy val resolver = project
   .in(file("resolver"))
   .settings(
-    resolvers += Resolver.githubPackages(githubOwner.value, githubRepository.value),
-
     libraryDependencies += "com.codecommit" %% ArtifactId % version.value)
