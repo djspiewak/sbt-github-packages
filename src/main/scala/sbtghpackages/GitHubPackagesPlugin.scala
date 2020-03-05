@@ -90,7 +90,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
       for {
         owner <- githubOwner.?.value
         repo <- githubRepository.?.value
-      } yield ScmInfo(url(s"https://github.com/$owner/$repo"), s"scm:git@github.com:$owner/$repo")
+      } yield ScmInfo(url(s"https://github.com/$owner/$repo"), s"scm:git@github.com:$owner/$repo.git")
     },
 
     homepage := {
