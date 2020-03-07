@@ -58,6 +58,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
   val packagePublishSettings = Seq(
     publishTo := {
+      val suppress = githubSuppressPublicationWarning.value
       val log = streams.value.log
       val ms = publishMavenStyle.value
       val back = for {
@@ -73,7 +74,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
       back orElse {
         GitHubPackagesPlugin synchronized {
-          if (!alreadyWarned) {
+          if (!alreadyWarned && !suppress) {
             log.warn("undefined keys `githubOwner` and `githubRepository`")
             log.warn("retaining pre-existing publication settings")
             alreadyWarned = true
@@ -132,4 +133,6 @@ object GitHubPackagesPlugin extends AutoPlugin {
     s"GitHub Package Registry (${owner}${if (repo != "_") s"/$repo" else ""})"
 
   override def projectSettings = packagePublishSettings
+
+  override def buildSettings = Seq(githubSuppressPublicationWarning := false)
 }

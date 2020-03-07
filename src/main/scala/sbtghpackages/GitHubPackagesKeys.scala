@@ -24,6 +24,8 @@ trait GitHubPackagesKeys {
 
   val githubActor = settingKey[String]("The github user to use when authenticating (defaults to github.actor in the git config)")
   val githubTokenSource = settingKey[TokenSource]("Where to get the API token used in publication (defaults to github.token in the git config)")
+
+  val githubSuppressPublicationWarning = settingKey[Boolean]("Whether or not to suppress the publication warning (default: false, meaning the warning will be printed)")
 }
 
 object GitHubPackagesKeys extends GitHubPackagesKeys
