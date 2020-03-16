@@ -42,14 +42,7 @@ You may also *optionally* specify a repository as the second argument. **This is
 
 This resolver will give you access to packages published on *any* repository within the organization. If the token provided in the authentication information only has access to public repositories, then packages published on private repositories will report "not found". If the token has access to private repositories as well as public, then all packages will be visible.
 
-You will need to ensure that both `githubActor` and `githubTokenSource` are set to *your* details (i.e. the authentication information for the individual who ran `sbt`). A relatively common setup for this is to use environment variables. For example, my `~/.profile` contains the following lines:
-
-```bash
-export GITHUB_ACTOR=djspiewak
-export GITHUB_TOKEN='<redacted>'
-```
-
-Once this is configured, sbt-github-packages will automatically set your `githubActor` key to its value. That just leaves the `githubTokenSource`. The `TokenSource` ADT has the following possibilities:
+You will need to ensure that `githubTokenSource` is set to *your* details (i.e. the authentication information for the individual who ran `sbt`). The `TokenSource` ADT has the following possibilities:
 
 ```scala
 sealed trait TokenSource extends Product with Serializable {
@@ -64,11 +57,13 @@ object TokenSource {
 }
 ```
 
-As mentioned earlier, environment variables are a good default. For example, I have a GitHub token for my laptop stored in the `GITHUB_TOKEN` environment variable. If you mirror this setup, you should configure `githubTokenSource` in the following way:
+Environment variables are a good default. For example, I have a GitHub token for my laptop stored in the `GITHUB_TOKEN` environment variable. If you mirror this setup, you should configure `githubTokenSource` in the following way:
 
 ```sbt
 githubTokenSource := TokenSource.Environment("GITHUB_TOKEN")
 ```
+
+This is, in fact, *exactly* the default configuration. In other words, if you set the `GITHUB_TOKEN` environment variable, then this plugin will work out of the box with no configuration.
 
 To use a token from `~/.gitconfig` you should add:
 
@@ -85,7 +80,7 @@ This assumes you have your token stored there like this:
 
 The `||` combinator allows you to configure multiple token sources which will be tried in order on first-read of the setting.
 
-Note that your CI server will need to set the `GITHUB_TOKEN` environment variable as well, as well as any collaborators on your project. The environment-specific nature of these login credentials are a major part of why they are *not* just strings sitting in the `build.sbt` file. As an example, if you're using Travis, you can do something like the following:
+Note that your CI server will need to set the `GITHUB_TOKEN` environment variable as well (if using the `Environment` token source), as well as any collaborators on your project. The environment-specific nature of these login credentials are a major part of why they are *not* just strings sitting in the `build.sbt` file. As an example, if you're using Travis, you can do something like the following:
 
 ```bash
 # in your .profile file
@@ -93,6 +88,13 @@ $ export GITHUB_TOKEN="abcdef12345cafebabe"   # <-- your token here (or your bui
 
 # ...and when setting up your project
 $ travis encrypt GITHUB_TOKEN=$GITHUB_TOKEN
+```
+
+If using GitHub Actions, the following is usually sufficient:
+
+```yaml
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Token Permissions
@@ -120,7 +122,9 @@ Please, for the love of all that is holy, do not check this into your repository
 
 Okay, so GitHub Actions is pretty much undocumented with respect to its interactions with GitHub Packages. Through experimentation though, we've learned some important things.
 
-The default token automagically-provided to all repositories works with GitHub Packages. So in other words, if you add `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}` to your workflow's `env` section, things should work out just fine. The token in question is a JWT *bearer* token, not a conventional OAuth token, and so the `GITHUB_ACTOR` value is irrelevant *but must still be set*. Set `GITHUB_ACTOR` to any valid username.
+The default token automagically-provided to all repositories works with GitHub Packages. So in other words, if you add `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}` to your workflow's `env` section, things should work out just fine. The token in question is a JWT *bearer* token, not a conventional OAuth token.
+
+Despite the fact that this token is documented as "scoped to the current repository", it will actually allow for *read* access to all public packages, not just in the current repository but in other repositories as well. We haven't yet tested whether or not this holds for *private* packages within the same organization, but I would assume not.
 
 ### Keys
 
@@ -128,7 +132,6 @@ The following setting keys are defined:
 
 - `githubOwner : String` Defines the organization or user name that owns the package registry to which this project will be published
 - `githubRepository : String` The repository which hosts this project under the organization/user defined in the other setting
-- `githubActor : String` (*defaults to `GITHUB_ACTOR`*) *Your* GitHub username. This should almost never be specified in the build itself, but rather read from some external source. By default, it will read the `GITHUB_ACTOR` environment variable. To be extremely clear, this is the user who ran the `sbt` command, it is not *necessarily* the repository owner!
 - `githubTokenSource : TokenSource` (*defaults to `Environment("GITHUB_TOKEN")`*) Where the plugin should go to read the GitHub API token to use in authentication. `TokenSource` has two possible values: `Environment(variable: String)` and `GitConfig(key: String)`. You can compose multiple sources together using `||`, which will result in each being attempted in order from left to right. This is mostly just a convenience. You're free to do whatever you want. Just don't, like, put it in your build. 
 - `githubSuppressPublicationWarning : Boolean` (*defaults to `false`*) If you're just using this plugin as a means to *resolve* artifacts, not to publish them, the publication warning may serve as an annoyance more than anything else. Setting this to `true` will suppress the normal warning text when you fail to define `githubOwner` or `githubRepository`.
 

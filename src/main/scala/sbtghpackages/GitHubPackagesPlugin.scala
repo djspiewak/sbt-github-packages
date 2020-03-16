@@ -40,14 +40,12 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
   import autoImport._
 
-  val userDefaults = sys.env.get("GITHUB_ACTOR").toSeq.map(githubActor := _)
-
   val authenticationSettings = Seq(
     githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
 
     credentials += {
       val src = githubTokenSource.value
-      inferredGitHubCredentials(githubActor.value, src) match {
+      inferredGitHubCredentials("_", src) match {   // user is ignored by GitHub, so just use "_"
         case Some(creds) =>
           creds
 
@@ -103,29 +101,29 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
     pomIncludeRepository := (_ => false),
     publishMavenStyle := true) ++
-    userDefaults ++
     authenticationSettings
 
-  def inferredGitHubCredentials(user: String, tokenSource: TokenSource): Option[Credentials] = {
-    def make(tokenM: Option[String]) =
-      tokenM map { token =>
-        Credentials(
-          "GitHub Package Registry",
-          "maven.pkg.github.com",
-          user,
-          token)
-      }
-
+  def resolveTokenSource(tokenSource: TokenSource): Option[String] = {
     tokenSource match {
       case TokenSource.Or(primary, secondary) =>
-        inferredGitHubCredentials(user, primary).orElse(
-          inferredGitHubCredentials(user, secondary))
+        resolveTokenSource(primary).orElse(
+          resolveTokenSource(secondary))
 
       case TokenSource.Environment(variable) =>
-        make(sys.env.get(variable))
+        sys.env.get(variable)
 
       case TokenSource.GitConfig(key) =>
-        make(Try(s"git config $key".!!).map(_.trim).toOption)
+        Try(s"git config $key".!!).map(_.trim).toOption
+    }
+  }
+
+  def inferredGitHubCredentials(user: String, tokenSource: TokenSource): Option[Credentials] = {
+    resolveTokenSource(tokenSource) map { token =>
+      Credentials(
+        "GitHub Package Registry",
+        "maven.pkg.github.com",
+        user,
+        token)
     }
   }
 
