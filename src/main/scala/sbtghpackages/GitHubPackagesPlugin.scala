@@ -86,17 +86,21 @@ object GitHubPackagesPlugin extends AutoPlugin {
     resolvers ++= githubOwner.?.value.toSeq.map(Resolver.githubPackages(_)),
 
     scmInfo := {
-      for {
+      val back = for {
         owner <- githubOwner.?.value
         repo <- githubRepository.?.value
       } yield ScmInfo(url(s"https://github.com/$owner/$repo"), s"scm:git@github.com:$owner/$repo.git")
+
+      back.orElse(scmInfo.value)
     },
 
     homepage := {
-      for {
+      val back = for {
         owner <- githubOwner.?.value
         repo <- githubRepository.?.value
       } yield url(s"https://github.com/$owner/$repo")
+
+      back.orElse(homepage.value)
     },
 
     pomIncludeRepository := (_ => false),
