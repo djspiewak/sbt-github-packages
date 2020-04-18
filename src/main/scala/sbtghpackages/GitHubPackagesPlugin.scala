@@ -55,7 +55,8 @@ object GitHubPackagesPlugin extends AutoPlugin {
     })
 
   val packagePublishSettings = Seq(
-    publishTo := {
+    publishTo := githubPublishTo.value,
+    githubPublishTo := {
       val suppress = githubSuppressPublicationWarning.value
       val log = streams.value.log
       val ms = publishMavenStyle.value
