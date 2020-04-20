@@ -136,11 +136,10 @@ The following setting keys are defined:
 - `githubSuppressPublicationWarning : Boolean` (*defaults to `false`*) If you're just using this plugin as a means to *resolve* artifacts, not to publish them, the publication warning may serve as an annoyance more than anything else. Setting this to `true` will suppress the normal warning text when you fail to define `githubOwner` or `githubRepository`.
 - `githubPublishTo : Option[Resolver]` The default `publishTo` target for GitHub Packages. This setting is useful for switching `publishTo` target to [sbt-sonatype](https://github.com/xerial/sbt-sonatype) or GitHub Packages: 
 
-```scala
-// Switch publishTo target for using Sonatype if RELEASE_SONATYPE env is true, 
-// otherwise publish to GitHub Packages:
-val RELEASE_TO_SONATYPE = sys.env.getOrElse("RELEASE_SONATYPE", "false").toBoolean 
-publishTo := if(RELEASE_SONATYPE) sonatypePublishTo.value else githubPublishTo.value
-```
+  ```scala
+  // Switch publishTo target for using Sonatype if RELEASE_SONATYPE env is true, 
+  // otherwise publish to GitHub Packages:
+  val RELEASE_TO_SONATYPE = sys.env.getOrElse("RELEASE_SONATYPE", "false").toBoolean 
+  publishTo := if(RELEASE_SONATYPE) sonatypePublishTo.value else githubPublishTo.value
 
 `homepage` and `scmInfo` will be automatically set for you if `githubOwner` and `githubRepository` are themselves set.
