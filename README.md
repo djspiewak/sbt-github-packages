@@ -124,7 +124,9 @@ Okay, so GitHub Actions is pretty much undocumented with respect to its interact
 
 The default token automagically-provided to all repositories works with GitHub Packages. So in other words, if you add `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}` to your workflow's `env` section, things should work out just fine. The token in question is a JWT *bearer* token, not a conventional OAuth token.
 
-Despite the fact that this token is documented as "scoped to the current repository", it will actually allow for *read* access to all public packages, not just in the current repository but in other repositories as well. We haven't yet tested whether or not this holds for *private* packages within the same organization, but I would assume not.
+Despite the fact that this token is documented as "scoped to the current repository", it will actually allow for *read* access to all public packages, not just in the current repository but in other repositories as well. 
+
+It will NOT allow for read access to *private* packages within the same organization. You might see the following issue `[error]   not found: https://maven.pkg.github.com/...`. In order to pass, you have to create personal access token with [read:packages](https://developer.github.com/apps/building-oauth-apps/understanding-scopes-for-oauth-apps/#available-scopes) scope and use it `GITHUB_TOKEN: ${{ secrets.TOKEN_WITH_READ_PACKAGES_SCOPE }}`
 
 ### Keys
 
