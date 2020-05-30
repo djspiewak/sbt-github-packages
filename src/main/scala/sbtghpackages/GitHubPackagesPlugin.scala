@@ -55,9 +55,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
     })
 
   val packagePublishSettings = Seq(
-    publishTo := githubPublishTo.value,
     githubPublishTo := {
-      val suppress = githubSuppressPublicationWarning.value
       val log = streams.value.log
       val ms = publishMavenStyle.value
       val back = for {
@@ -71,7 +69,14 @@ object GitHubPackagesPlugin extends AutoPlugin {
         }
       }
 
-      back orElse {
+      back
+    },
+
+    publishTo := {
+      val suppress = githubSuppressPublicationWarning.value
+      val log = streams.value.log
+
+      githubPublishTo.value orElse {
         GitHubPackagesPlugin synchronized {
           if (!alreadyWarned && !suppress) {
             log.warn("undefined keys `githubOwner` and `githubRepository`")
