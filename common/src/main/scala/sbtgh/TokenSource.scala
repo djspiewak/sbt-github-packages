@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package sbtghpackages
+package sbtgh
 
 sealed trait TokenSource extends Product with Serializable {
   def ||(that: TokenSource): TokenSource =

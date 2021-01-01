@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package sbtghpackages
+package sbtgh.packages
 
-import sbt._, Keys._
-
-import scala.sys.process._
-import scala.util.Try
+import sbt._
+import Keys._
 
 object GitHubPackagesPlugin extends AutoPlugin {
   @volatile
@@ -29,16 +27,12 @@ object GitHubPackagesPlugin extends AutoPlugin {
   override def trigger = allRequirements
 
   object autoImport extends GitHubPackagesKeys {
-    type TokenSource = sbtghpackages.TokenSource
-    val TokenSource = sbtghpackages.TokenSource
-
-    implicit class GHPackagesResolverSyntax(val resolver: Resolver.type) extends AnyVal {
-      def githubPackages(owner: String, repo: String = "_"): MavenRepository =
-        realm(owner, repo) at s"https://maven.pkg.github.com/$owner/$repo"
-    }
+    type TokenSource = sbtgh.TokenSource
+    val TokenSource = sbtgh.TokenSource
   }
 
   import autoImport._
+  import sbtgh.GitHubResolver._
 
   val authenticationSettings = Seq(
     githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
@@ -112,33 +106,6 @@ object GitHubPackagesPlugin extends AutoPlugin {
     pomIncludeRepository := (_ => false),
     publishMavenStyle := true) ++
     authenticationSettings
-
-  def resolveTokenSource(tokenSource: TokenSource): Option[String] = {
-    tokenSource match {
-      case TokenSource.Or(primary, secondary) =>
-        resolveTokenSource(primary).orElse(
-          resolveTokenSource(secondary))
-
-      case TokenSource.Environment(variable) =>
-        sys.env.get(variable)
-
-      case TokenSource.GitConfig(key) =>
-        Try(s"git config $key".!!).map(_.trim).toOption
-    }
-  }
-
-  def inferredGitHubCredentials(user: String, tokenSource: TokenSource): Option[Credentials] = {
-    resolveTokenSource(tokenSource) map { token =>
-      Credentials(
-        "GitHub Package Registry",
-        "maven.pkg.github.com",
-        user,
-        token)
-    }
-  }
-
-  private def realm(owner: String, repo: String) =
-    s"GitHub Package Registry (${owner}${if (repo != "_") s"/$repo" else ""})"
 
   override def projectSettings = packagePublishSettings
 

@@ -14,20 +14,44 @@
  * limitations under the License.
  */
 
-name := "sbt-github-packages"
+inThisBuild(Seq(
+  baseVersion := "0.5",
+  organization := "com.codecommit",
+  publishGithubUser := "djspiewak",
+  publishFullName := "Daniel Spiewak",
+  bintrayVcsUrl := Some("git@github.com:djspiewak/sbt-spiewak.git"),
+  sbtPlugin := true,
+  sbtVersion := "1.4.6",
+))
 
-ThisBuild / baseVersion := "0.5"
+val pluginSettings = Seq(
+  scriptedLaunchOpts ++= Seq("-Dplugin.version=" + version.value),
+  scriptedBufferLog := true
+)
 
-ThisBuild / organization := "com.codecommit"
-ThisBuild / publishGithubUser := "djspiewak"
-ThisBuild / publishFullName := "Daniel Spiewak"
+lazy val common = project
+  .in(file("./common"))
+  .settings(
+    moduleName := "sbt-github-common"
+  )
 
-ThisBuild / bintrayVcsUrl := Some("git@github.com:djspiewak/sbt-spiewak.git")
+lazy val packages = project
+  .in(file("./packages"))
+  .enablePlugins(SbtPlugin)
+  .settings(pluginSettings)
+  .settings(
+    moduleName := "sbt-github-packages"
+  )
+  .dependsOn(common)
 
-ThisBuild / sbtPlugin := true
-ThisBuild / sbtVersion := "1.3.3"
+lazy val remote_cache = project
+  .in(file("./remote_cache"))
+  .enablePlugins(SbtPlugin)
+  .settings(pluginSettings)
+  .settings(
+    moduleName := "sbt-github-remote-cache"
+  )
+  .dependsOn(packages)
 
-enablePlugins(SbtPlugin)
 
-scriptedLaunchOpts ++= Seq("-Dplugin.version=" + version.value)
-scriptedBufferLog := true
+
