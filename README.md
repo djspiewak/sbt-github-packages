@@ -42,7 +42,16 @@ You may also *optionally* specify a repository as the second argument. **This is
 
 This resolver will give you access to packages published on *any* repository within the organization. If the token provided in the authentication information only has access to public repositories, then packages published on private repositories will report "not found". If the token has access to private repositories as well as public, then all packages will be visible.
 
-You will need to ensure that `githubTokenSource` is set to *your* details (i.e. the authentication information for the individual who ran `sbt`). The `TokenSource` ADT has the following possibilities:
+### Authentication
+
+You will need to ensure that `githubTokenSource` is set to *your* details (i.e. the authentication information for the individual who ran `sbt`). If you do
+not establish a token source then you will be unable to authenticate, and you will receive the following message when you attempt to publish:
+
+```
+[error] Unable to find credentials for [GitHub Package Registry @ maven.pkg.github.com].
+```
+
+The `TokenSource` ADT has the following possibilities:
 
 ```scala
 sealed trait TokenSource extends Product with Serializable {
