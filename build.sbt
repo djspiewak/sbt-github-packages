@@ -27,6 +27,16 @@ ThisBuild / sbtVersion := "1.3.3"
 
 enablePlugins(SbtPlugin)
 
+homepage := Some(url("https://github.com/djspiewak/sbt-github-packages"))
+
+scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/djspiewak/sbt-github-packages"),
+    "scm:git@github.com:djspiewak/sbt-github-packages.git"))
+
+developers := List(
+  Developer(id="djspiewak", name="Daniel Spiewak", email="djspiewak@gmail.com", url=url("https://github.com/djspiewak")))
+
 publishMavenStyle := true
 
 scriptedLaunchOpts ++= Seq("-Dplugin.version=" + version.value)
