@@ -22,12 +22,12 @@ ThisBuild / organization := "com.codecommit"
 ThisBuild / publishGithubUser := "djspiewak"
 ThisBuild / publishFullName := "Daniel Spiewak"
 
-ThisBuild / bintrayVcsUrl := Some("git@github.com:djspiewak/sbt-spiewak.git")
-
 ThisBuild / sbtPlugin := true
 ThisBuild / sbtVersion := "1.3.3"
 
 enablePlugins(SbtPlugin)
+
+publishMavenStyle := true
 
 scriptedLaunchOpts ++= Seq("-Dplugin.version=" + version.value)
 scriptedBufferLog := true
