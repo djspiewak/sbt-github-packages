@@ -30,6 +30,8 @@ The reason this functionality is disabled by default is you may wish to utilize 
 
 As a note on publication, *only* `publishMavenStyle := true` (the default) is supported. If you explicitly override this setting to `false`, the sbt-github-packages plugin will produce an error and refuse to load (unless `githubOwner` and/or `githubRepository` are undefined). The reason for this is to remove a bit of a foot-gun: GitHub Packages will silently allow you to publish Ivy-style packages, and will even show it within the UI, but will not allow you to *resolve* them.
 
+Once everything is configured, run `sbt publish` to publish the package.
+
 ### Resolvers
 
 If you're consuming packages that were published in the GitHub Package Registry, this plugin defines some convenience syntax for adding resolvers:
