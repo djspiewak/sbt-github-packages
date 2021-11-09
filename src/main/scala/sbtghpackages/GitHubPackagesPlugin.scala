@@ -41,16 +41,19 @@ object GitHubPackagesPlugin extends AutoPlugin {
   import autoImport._
 
   val authenticationSettings = Seq(
-    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
+    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.Property("GITHUB_TOKEN"),
 
     credentials += {
+      val log = streams.value.log
       val src = githubTokenSource.value
       inferredGitHubCredentials("_", src) match {   // user is ignored by GitHub, so just use "_"
         case Some(creds) =>
           creds
 
         case None =>
-          sys.error(s"unable to locate a valid GitHub token from $src")
+          log.error("Make sure at least one token source is configured properly:")
+          helpMessages(src).foreach(message => log.error(s"  * $message"))
+          sys.error(s"Unable to locate a valid GitHub token from $src")
       }
     })
 
@@ -122,6 +125,9 @@ object GitHubPackagesPlugin extends AutoPlugin {
       case TokenSource.Environment(variable) =>
         sys.env.get(variable)
 
+      case TokenSource.Property(key) =>
+        sys.props.get(key)
+
       case TokenSource.GitConfig(key) =>
         Try(s"git config $key".!!).map(_.trim).toOption
     }
@@ -139,6 +145,25 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
   private def realm(owner: String, repo: String) =
     s"GitHub Package Registry (${owner}${if (repo != "_") s"/$repo" else ""})"
+
+  private def helpMessages(tokenSource: TokenSource): List[String] = {
+    def loop(input: TokenSource, output: List[String]): List[String] =
+      input match {
+        case TokenSource.Or(primary, secondary) =>
+          loop(primary, Nil) ::: loop(secondary, Nil) ::: output
+
+        case TokenSource.Environment(variable) =>
+          s"Use `$variable=<token> sbt` or `export $variable=<token>; sbt`." :: output
+
+        case TokenSource.Property(key) =>
+          s"Use `sbt -D$key=<token>` or update `.sbtopts` file." :: output
+
+        case TokenSource.GitConfig(key) =>
+          s"Use `git config $key <token>`." :: output
+      }
+
+    loop(tokenSource, Nil)
+  }
 
   override def projectSettings = packagePublishSettings
 

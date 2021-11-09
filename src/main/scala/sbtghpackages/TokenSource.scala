@@ -23,6 +23,7 @@ sealed trait TokenSource extends Product with Serializable {
 
 object TokenSource {
   final case class Environment(variable: String) extends TokenSource
+  final case class Property(key: String) extends TokenSource
   final case class GitConfig(key: String) extends TokenSource
   final case class Or(primary: TokenSource, secondary: TokenSource) extends TokenSource
 }
