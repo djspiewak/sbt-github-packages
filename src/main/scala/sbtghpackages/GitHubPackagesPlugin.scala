@@ -51,12 +51,8 @@ object GitHubPackagesPlugin extends AutoPlugin {
           creds
 
         case None =>
-          log.error(s"Unable to locate a valid GitHub token from $src")
-          log.error("To provide token explicitly, use `GITHUB_TOKEN=<your token> sbt` or `sbt -DGITHUB_TOKEN=<your token>`")
-          log.error(
-            "A token should have the `read:packages` permission. For more details see " +
-              "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token"
-          )
+          log.error("Make sure at least one token source is configured properly:")
+          helpMessages(src).foreach(message => log.error(s"  * $message"))
           sys.error(s"Unable to locate a valid GitHub token from $src")
       }
     })
@@ -149,6 +145,25 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
   private def realm(owner: String, repo: String) =
     s"GitHub Package Registry (${owner}${if (repo != "_") s"/$repo" else ""})"
+
+  private def helpMessages(tokenSource: TokenSource): List[String] = {
+    def loop(input: TokenSource, output: List[String]): List[String] =
+      input match {
+        case TokenSource.Or(primary, secondary) =>
+          loop(primary, Nil) ::: loop(secondary, Nil) ::: output
+
+        case TokenSource.Environment(variable) =>
+          s"Use `$variable=<token> sbt` or `export $variable=<token>; sbt`." :: output
+
+        case TokenSource.Property(key) =>
+          s"Use `sbt -D$key=<token>` or update `.sbtopts` file." :: output
+
+        case TokenSource.GitConfig(key) =>
+          s"Use `git config $key <token>`." :: output
+      }
+
+    loop(tokenSource, Nil)
+  }
 
   override def projectSettings = packagePublishSettings
 
