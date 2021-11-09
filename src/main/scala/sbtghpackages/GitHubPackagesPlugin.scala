@@ -44,13 +44,20 @@ object GitHubPackagesPlugin extends AutoPlugin {
     githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.Property("GITHUB_TOKEN"),
 
     credentials += {
+      val log = streams.value.log
       val src = githubTokenSource.value
       inferredGitHubCredentials("_", src) match {   // user is ignored by GitHub, so just use "_"
         case Some(creds) =>
           creds
 
         case None =>
-          sys.error(s"unable to locate a valid GitHub token from $src")
+          log.error(s"Unable to locate a valid GitHub token from $src")
+          log.error("To provide token explicitly, use `GITHUB_TOKEN=<your token> sbt` or `sbt -DGITHUB_TOKEN=<your token>`")
+          log.error(
+            "A token should have the `read:packages` permission. For more details see " +
+              "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token"
+          )
+          sys.error(s"Unable to locate a valid GitHub token from $src")
       }
     })
 
