@@ -41,7 +41,7 @@ object GitHubPackagesPlugin extends AutoPlugin {
   import autoImport._
 
   val authenticationSettings = Seq(
-    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
+    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.Property("GITHUB_TOKEN"),
 
     credentials += {
       val src = githubTokenSource.value
@@ -121,6 +121,9 @@ object GitHubPackagesPlugin extends AutoPlugin {
 
       case TokenSource.Environment(variable) =>
         sys.env.get(variable)
+
+      case TokenSource.Property(key) =>
+        sys.props.get(key)
 
       case TokenSource.GitConfig(key) =>
         Try(s"git config $key".!!).map(_.trim).toOption

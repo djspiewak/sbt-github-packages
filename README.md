@@ -54,6 +54,7 @@ sealed trait TokenSource extends Product with Serializable {
 
 object TokenSource {
   final case class Environment(variable: String) extends TokenSource
+  final case class Property(key: String) extends TokenSource
   final case class GitConfig(key: String) extends TokenSource
   final case class Or(primary: TokenSource, secondary: TokenSource) extends TokenSource
 }
@@ -79,6 +80,18 @@ This assumes you have your token stored there like this:
 [github]
   token = TOKEN_DATA
 ```
+
+To use a token from the process properties it should be specified when running sbt:
+```bash
+$ sbt -DGITHUB_TOKEN=abcdef12345cafebab 
+```
+
+or create `.sbtopts` file in the project directory with the following content:
+```
+-DGITHUB_TOKEN=abcdef12345cafeba
+```
+
+The option above is suitable for importing the project into IntelliJ IDEA.
 
 The `||` combinator allows you to configure multiple token sources which will be tried in order on first-read of the setting.
 
