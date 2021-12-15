@@ -16,21 +16,19 @@
 
 package sbtghpackages
 
-import sbt._, Keys._
-
-import scala.sys.process._
-import scala.util.Try
+import sbt._
 
 object GitHubPackagesPlugin extends AutoPlugin {
-  @volatile
-  private[this] var alreadyWarned = false
 
-  override def requires = plugins.JvmPlugin
+  override def requires = GitHubPackagesResolverPlugin && GitHubPackagesPublisherPlugin
   override def trigger = allRequirements
 
   object autoImport extends GitHubPackagesKeys {
     type TokenSource = sbtghpackages.TokenSource
     val TokenSource = sbtghpackages.TokenSource
+
+    type GitHubRepository = sbtghpackages.GitHubRepository
+    val GitHubRepository = sbtghpackages.GitHubRepository
 
     implicit class GHPackagesResolverSyntax(val resolver: Resolver.type) extends AnyVal {
       def githubPackages(owner: String, repo: String = "_"): MavenRepository =
@@ -39,103 +37,27 @@ object GitHubPackagesPlugin extends AutoPlugin {
   }
 
   import autoImport._
-
-  val authenticationSettings = Seq(
-    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
-
-    credentials += {
-      val src = githubTokenSource.value
-      inferredGitHubCredentials("_", src) match {   // user is ignored by GitHub, so just use "_"
-        case Some(creds) =>
-          creds
-
-        case None =>
-          sys.error(s"unable to locate a valid GitHub token from $src")
-      }
-    })
+  import GitHubPackagesPublisherKeys._
+  import GitHubPackagesResolverKeys._
+  import GitHubPackagesPublisherPlugin.githubPublishToRepositoryOpt
 
   val packagePublishSettings = Seq(
-    githubPublishTo := {
-      val log = streams.value.log
-      val ms = publishMavenStyle.value
-      val back = for {
+    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.Property("GITHUB_TOKEN"),
+    githubPublishToRepositoryOpt := {
+      val source = githubTokenSource.value
+      for {
         owner <- githubOwner.?.value
         repo <- githubRepository.?.value
-      } yield "GitHub Package Registry" at s"https://maven.pkg.github.com/$owner/$repo"
-
-      back foreach { _ =>
-        if (!ms) {
-          sys.error("GitHub Packages does not support Ivy-style publication")
-        }
-      }
-
-      back
+      } yield GitHubRepository(owner, repo, source)
     },
-
-    publishTo := {
-      val suppress = githubSuppressPublicationWarning.value
-      val log = streams.value.log
-
-      githubPublishTo.value orElse {
-        GitHubPackagesPlugin synchronized {
-          if (!alreadyWarned && !suppress) {
-            log.warn("undefined keys `githubOwner` and `githubRepository`")
-            log.warn("retaining pre-existing publication settings")
-            alreadyWarned = true
-          }
-        }
-
-        publishTo.value
-      }
-    },
-
-    resolvers ++= githubOwner.?.value.toSeq.map(Resolver.githubPackages(_)),
-
-    scmInfo := {
-      val back = for {
+    githubRepositories ++= {
+      val source = githubTokenSource.value
+      for {
         owner <- githubOwner.?.value
         repo <- githubRepository.?.value
-      } yield ScmInfo(url(s"https://github.com/$owner/$repo"), s"scm:git@github.com:$owner/$repo.git")
-
-      back.orElse(scmInfo.value)
-    },
-
-    homepage := {
-      val back = for {
-        owner <- githubOwner.?.value
-        repo <- githubRepository.?.value
-      } yield url(s"https://github.com/$owner/$repo")
-
-      back.orElse(homepage.value)
-    },
-
-    pomIncludeRepository := (_ => false),
-    publishMavenStyle := true) ++
-    authenticationSettings
-
-  def resolveTokenSource(tokenSource: TokenSource): Option[String] = {
-    tokenSource match {
-      case TokenSource.Or(primary, secondary) =>
-        resolveTokenSource(primary).orElse(
-          resolveTokenSource(secondary))
-
-      case TokenSource.Environment(variable) =>
-        sys.env.get(variable)
-
-      case TokenSource.GitConfig(key) =>
-        Try(s"git config $key".!!).map(_.trim).toOption
+      } yield GitHubRepository(owner, repo, source)
     }
-  }
-
-  def inferredGitHubCredentials(user: String, tokenSource: TokenSource): Option[Credentials] = {
-    resolveTokenSource(tokenSource) map { token =>
-      Credentials(
-        "GitHub Package Registry",
-        "maven.pkg.github.com",
-        user,
-        token)
-    }
-  }
+  )
 
   private def realm(owner: String, repo: String) =
     s"GitHub Package Registry (${owner}${if (repo != "_") s"/$repo" else ""})"
