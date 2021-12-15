@@ -14,7 +14,36 @@
  * limitations under the License.
  */
 
-name := "sbt-github-packages"
+lazy val `sbt-github-packages` = project
+  .in(file("."))
+  .enablePlugins(SbtPlugin)
+  .settings(
+    name := "sbt-github-packages"
+  )
+  .dependsOn(common, `gh-publisher`, `gh-resolver`)
+  .aggregate(common, `gh-publisher`, `gh-resolver`)
+
+lazy val `gh-publisher` = project
+  .in(file("modules/publisher"))
+  .enablePlugins(SbtPlugin)
+  .settings(
+    name := "sbt-github-packages-publisher"
+  )
+  .dependsOn(common)
+
+lazy val `gh-resolver` = project
+  .in(file("modules/resolver"))
+  .enablePlugins(SbtPlugin)
+  .settings(
+    name := "sbt-github-packages-resolver"
+  )
+  .dependsOn(common)
+
+lazy val common = project
+  .in(file("modules/common"))
+  .settings(
+    name := "sbt-github-packages-common"
+  )
 
 ThisBuild / baseVersion := "0.5"
 
@@ -23,13 +52,11 @@ ThisBuild / publishGithubUser := "djspiewak"
 ThisBuild / publishFullName := "Daniel Spiewak"
 
 ThisBuild / sbtPlugin := true
-ThisBuild / sbtVersion := "1.3.3"
+ThisBuild / sbtVersion := "1.5.6"
 
-enablePlugins(SbtPlugin)
+ThisBuild / homepage := Some(url("https://github.com/djspiewak/sbt-github-packages"))
 
-homepage := Some(url("https://github.com/djspiewak/sbt-github-packages"))
-
-scmInfo := Some(
+ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/djspiewak/sbt-github-packages"),
     "scm:git@github.com:djspiewak/sbt-github-packages.git"))
@@ -39,5 +66,9 @@ developers := List(
 
 publishMavenStyle := true
 
-scriptedLaunchOpts ++= Seq("-Dplugin.version=" + version.value)
-scriptedBufferLog := true
+ThisBuild / scriptedLaunchOpts ++= Seq(
+  "-Dplugin.version=" + version.value,
+  "-DSTARTUP_PROPERTY_TOKEN=ghp_123321"
+)
+
+ThisBuild / scriptedBufferLog := true

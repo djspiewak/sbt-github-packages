@@ -12,23 +12,22 @@ addSbtPlugin("com.codecommit" % "sbt-github-packages" % "<version>")
 
 Published for sbt 1.x. No dependencies.
 
-In order to *publish* artifacts via this plugin, you will need to override the `githubOwner` and `githubRepository` setting keys to the relevant values for your project. For example:
+In order to *publish* artifacts via this plugin, you will need to override the `githubPublishToRepository` setting key to the relevant values for your project. For example:
 
 ```sbt
-githubOwner := "djspiewak"
-githubRepository := "sbt-github-packages"
+githubPublishToRepository := GitHubRepository("djspiewak", "sbt-github-packages", TokenSource.Environment("GH_TOKEN"))
 ```
 
 In the event that you do *not* override these values, you will see a warning like the following:
 
 ```
-[warn] undefined keys `githubOwner` and `githubRepository`
+[warn] undefined keys `githubPublishToRepository`
 [warn] retaining pre-existing publication settings
 ```
 
 The reason this functionality is disabled by default is you may wish to utilize the `Resolver` syntax (described below) *without* overriding your default publication mechanism. In general, I wouldn't necessarily recommend this, since it means that your publication will not be self-contained within a single artifact realm, but that's a relatively common problem anyway these days so it's probably not a big deal.
 
-As a note on publication, *only* `publishMavenStyle := true` (the default) is supported. If you explicitly override this setting to `false`, the sbt-github-packages plugin will produce an error and refuse to load (unless `githubOwner` and/or `githubRepository` are undefined). The reason for this is to remove a bit of a foot-gun: GitHub Packages will silently allow you to publish Ivy-style packages, and will even show it within the UI, but will not allow you to *resolve* them.
+As a note on publication, *only* `publishMavenStyle := true` (the default) is supported. If you explicitly override this setting to `false`, the sbt-github-packages plugin will produce an error and refuse to load (unless `githubPublishToRepository` is undefined). The reason for this is to remove a bit of a foot-gun: GitHub Packages will silently allow you to publish Ivy-style packages, and will even show it within the UI, but will not allow you to *resolve* them.
 
 Once everything is configured, run `sbt publish` to publish the package.
 
@@ -54,6 +53,7 @@ sealed trait TokenSource extends Product with Serializable {
 
 object TokenSource {
   final case class Environment(variable: String) extends TokenSource
+  final case class Property(variable: String) extends TokenSource
   final case class GitConfig(key: String) extends TokenSource
   final case class Or(primary: TokenSource, secondary: TokenSource) extends TokenSource
 }
@@ -79,6 +79,18 @@ This assumes you have your token stored there like this:
 [github]
   token = TOKEN_DATA
 ```
+
+To use a token from the process properties it should be specified when running sbt:
+```bash
+$ sbt -DGITHUB_TOKEN=abcdef12345cafebab 
+```
+
+or create `.sbtopts` file in the project directory with the following content:
+```
+-DGITHUB_TOKEN=abcdef12345cafeba
+```
+
+The option above is suitable for importing the project into IntelliJ IDEA.
 
 The `||` combinator allows you to configure multiple token sources which will be tried in order on first-read of the setting.
 
@@ -134,10 +146,21 @@ It will NOT allow for read access to *private* packages within the same organiza
 
 The following setting keys are defined:
 
-- `githubOwner : String` Defines the organization or user name that owns the package registry to which this project will be published
-- `githubRepository : String` The repository which hosts this project under the organization/user defined in the other setting
-- `githubTokenSource : TokenSource` (*defaults to `Environment("GITHUB_TOKEN")`*) Where the plugin should go to read the GitHub API token to use in authentication. `TokenSource` has two possible values: `Environment(variable: String)` and `GitConfig(key: String)`. You can compose multiple sources together using `||`, which will result in each being attempted in order from left to right. This is mostly just a convenience. You're free to do whatever you want. Just don't, like, put it in your build. 
-- `githubSuppressPublicationWarning : Boolean` (*defaults to `false`*) If you're just using this plugin as a means to *resolve* artifacts, not to publish them, the publication warning may serve as an annoyance more than anything else. Setting this to `true` will suppress the normal warning text when you fail to define `githubOwner` or `githubRepository`.
+- `githubOwner : String` **deprecated** Defines the organization or user name that owns the package registry to which this project will be published
+- `githubRepository : String` **deprecated** The repository which hosts this project under the organization/user defined in the other setting
+- `githubTokenSource : TokenSource` **deprecated** (*defaults to `Environment("GITHUB_TOKEN")`*) Where the plugin should go to read the GitHub API token to use in authentication. `TokenSource` has three possible values: `Environment(variable: String)`, `Property(variable: String)`, and `GitConfig(key: String)`. You can compose multiple sources together using `||`, which will result in each being attempted in order from left to right. This is mostly just a convenience. You're free to do whatever you want. Just don't, like, put it in your build.
+- `githubRepositories: Seq[GitHubRepository]` Defines GitHub repositories that should be used for the dependencies lookup. A different token source can be used per repository.
+  ```scala
+  githubRepositories ++= Seq(
+    GitHubRepositry("owner1", "public-repo", TokenSource.Property("PUBLIC_TOKEN")),
+    GitHubRepositry("owner1", "private-repo", TokenSource.Property("PRIVATE_TOKEN"))
+  ) 
+  ```
+- `githubPublishToRepository: GitHubRepository` Defines a GitHub repository the package should be published to.  
+  ```scala
+  githubPublishToRepository := GitHubRepository("owner2", "private-repo", TokenSource.Property("PRIVATE_TOKEN"))
+  ```
+- `githubSuppressPublicationWarning : Boolean` (*defaults to `false`*) If you're just using this plugin as a means to *resolve* artifacts, not to publish them, the publication warning may serve as an annoyance more than anything else. Setting this to `true` will suppress the normal warning text when you fail to define `githubPublishToRepository`.
 - `githubPublishTo : Option[Resolver]` The default `publishTo` target for GitHub Packages. This setting is useful for switching `publishTo` target to [sbt-sonatype](https://github.com/xerial/sbt-sonatype) or GitHub Packages: 
 
   ```scala
@@ -145,5 +168,5 @@ The following setting keys are defined:
   // otherwise publish to GitHub Packages:
   val RELEASE_TO_SONATYPE = sys.env.getOrElse("RELEASE_SONATYPE", "false").toBoolean 
   publishTo := if(RELEASE_SONATYPE) sonatypePublishTo.value else githubPublishTo.value
-
-`homepage` and `scmInfo` will be automatically set for you if `githubOwner` and `githubRepository` are themselves set.
+  ```
+`homepage` and `scmInfo` will be automatically set for you if `githubPublishToRepository` is set.

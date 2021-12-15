@@ -16,13 +16,23 @@
 
 package sbtghpackages
 
-sealed trait TokenSource extends Product with Serializable {
-  def ||(that: TokenSource): TokenSource =
-    TokenSource.Or(this, that)
+final class GitHubRepository(
+    val owner: String,
+    val repository: String,
+    val tokenSource: TokenSource
+) {
+  def realm: String = s"GitHub Package Registry ($owner${if (repository != "_") s"/$repository" else ""})"
+
+  def mavenUrl: String = s"https://maven.pkg.github.com/$owner/$repository"
+
+  def repoUrl: String = s"https://github.com/$owner/$repository"
+
+  def scm: String = s"scm:git@github.com:$owner/$repository.git"
 }
 
-object TokenSource {
-  final case class Environment(variable: String) extends TokenSource
-  final case class GitConfig(key: String) extends TokenSource
-  final case class Or(primary: TokenSource, secondary: TokenSource) extends TokenSource
+object GitHubRepository {
+
+  def apply(owner: String, repository: String, source: TokenSource): GitHubRepository =
+    new GitHubRepository(owner, repository, source)
+
 }
