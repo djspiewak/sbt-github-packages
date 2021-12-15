@@ -54,9 +54,9 @@ ThisBuild / publishFullName := "Daniel Spiewak"
 ThisBuild / sbtPlugin := true
 ThisBuild / sbtVersion := "1.5.6"
 
-homepage := Some(url("https://github.com/djspiewak/sbt-github-packages"))
+ThisBuild / homepage := Some(url("https://github.com/djspiewak/sbt-github-packages"))
 
-scmInfo := Some(
+ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/djspiewak/sbt-github-packages"),
     "scm:git@github.com:djspiewak/sbt-github-packages.git"))

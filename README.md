@@ -153,7 +153,7 @@ The following setting keys are defined:
   ```scala
   githubRepositories ++= Seq(
     GitHubRepositry("owner1", "public-repo", TokenSource.Property("PUBLIC_TOKEN")),
-    GitHubRepositry("owner1", "private-repo", TokenSource.ENVIRONMENT("PRIVATE_TOKEN"))
+    GitHubRepositry("owner1", "private-repo", TokenSource.Property("PRIVATE_TOKEN"))
   ) 
   ```
 - `githubPublishToRepository: GitHubRepository` Defines a GitHub repository the package should be published to.  
