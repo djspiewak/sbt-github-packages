@@ -22,7 +22,7 @@ trait GitHubPackagesKeys {
   val githubOwner = settingKey[String]("The github user or organization name")
   val githubRepository = settingKey[String]("The github repository hosting this package")
 
-  val githubTokenSource = settingKey[TokenSource]("Where to get the API token used in publication (defaults to github.token in the git config)")
+  val githubTokenSource = settingKey[TokenSource]("Where to get the API token used in publication (defaults to GITHUB_TOKEN in environment variables)")
 
   val githubSuppressPublicationWarning = settingKey[Boolean]("Whether or not to suppress the publication warning (default: false, meaning the warning will be printed)")
 
