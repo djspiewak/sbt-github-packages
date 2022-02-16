@@ -43,14 +43,14 @@ object GitHubPackagesPlugin extends AutoPlugin {
   val authenticationSettings = Seq(
     githubTokenSource := TokenSource.Environment("GITHUB_TOKEN"),
 
-    credentials += {
+    credentials ++= {
       val src = githubTokenSource.value
       inferredGitHubCredentials("_", src) match {   // user is ignored by GitHub, so just use "_"
         case Some(creds) =>
-          creds
+          List(creds)
 
         case None =>
-          sys.error(s"unable to locate a valid GitHub token from $src")
+          Nil
       }
     })
 
