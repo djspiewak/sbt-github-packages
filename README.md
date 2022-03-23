@@ -44,6 +44,8 @@ You may also *optionally* specify a repository as the second argument. **This is
 
 This resolver will give you access to packages published on *any* repository within the organization. If the token provided in the authentication information only has access to public repositories, then packages published on private repositories will report "not found". If the token has access to private repositories as well as public, then all packages will be visible.
 
+#### Credentials
+
 You will need to ensure that `githubTokenSource` is set to *your* details (i.e. the authentication information for the individual who ran `sbt`). The `TokenSource` ADT has the following possibilities:
 
 ```scala
@@ -55,6 +57,7 @@ sealed trait TokenSource extends Product with Serializable {
 object TokenSource {
   final case class Environment(variable: String) extends TokenSource
   final case class GitConfig(key: String) extends TokenSource
+  final case class FromFile(file: File) extends TokenSource
   final case class Or(primary: TokenSource, secondary: TokenSource) extends TokenSource
 }
 ```
@@ -79,6 +82,14 @@ This assumes you have your token stored there like this:
 [github]
   token = TOKEN_DATA
 ```
+
+To read a token from a local file you can use something like:
+
+```sbt
+githubTokenSource := TokenSource.FromFile(Path.userHome / ".sbt" / "github.token")
+```
+
+The first line of the file will be read in and used as the GitHub token.
 
 The `||` combinator allows you to configure multiple token sources which will be tried in order on first-read of the setting.
 

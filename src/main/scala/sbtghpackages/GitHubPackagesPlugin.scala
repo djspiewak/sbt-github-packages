@@ -119,6 +119,10 @@ object GitHubPackagesPlugin extends AutoPlugin {
         resolveTokenSource(primary).orElse(
           resolveTokenSource(secondary))
 
+      case TokenSource.FromFile(file) =>
+        // Extract credentials from the first line of the file.
+        if (file.canRead) IO.readLines(file).headOption else None
+
       case TokenSource.Environment(variable) =>
         sys.env.get(variable)
 
