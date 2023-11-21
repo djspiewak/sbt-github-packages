@@ -143,7 +143,7 @@ The following setting keys are defined:
   ```scala
   // Switch publishTo target for using Sonatype if RELEASE_SONATYPE env is true, 
   // otherwise publish to GitHub Packages:
-  val RELEASE_TO_SONATYPE = sys.env.getOrElse("RELEASE_SONATYPE", "false").toBoolean 
-  publishTo := if(RELEASE_SONATYPE) sonatypePublishTo.value else githubPublishTo.value
+  val releaseToSonatype = sys.env.getOrElse("RELEASE_SONATYPE", "false").toBoolean 
+  publishTo := {if (releaseToSonatype) sonatypePublishTo.value else githubPublishTo.value}
 
 `homepage` and `scmInfo` will be automatically set for you if `githubOwner` and `githubRepository` are themselves set.
